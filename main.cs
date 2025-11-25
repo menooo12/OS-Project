@@ -39,7 +39,6 @@ namespace OS_project
 
                 superblock.WriteSuperblock(sbData);
                 Console.WriteLine("Superblock updated.");
-
                 byte[] sbRead = superblock.ReadSuperblock();
                 string sbText = Encoding.ASCII.GetString(sbRead, 0, sbMessage.Length);
                 Console.WriteLine("Superblock content: " + sbText);
