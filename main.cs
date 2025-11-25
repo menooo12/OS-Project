@@ -12,46 +12,63 @@ namespace OS_project
 
             try
             {
-                // Task 1: Virtual Disk
+                // ================================
+                //   TASK 1: Virtual Disk
+                // ================================
                 disk.Initialize(path, true);
-                Console.WriteLine("Disk created and opened.");
+                Console.WriteLine("Virtual Disk created and opened successfully.");
 
-                // write test data
-                byte[] message = Encoding.ASCII.GetBytes("Hello Virtual Disk!");
-                byte[] data = new byte[disk.CLUSTER_SIZE];
-                Array.Copy(message, data, message.Length);
-
-                disk.WriteCluster(0, data);
-                Console.WriteLine("Data written to cluster 0.");
-
-                // read it back
-                byte[] readBack = disk.ReadCluster(0);
-                string text = Encoding.ASCII.GetString(readBack, 0, message.Length);
-                Console.WriteLine("Data read from cluster 0: " + text);
-
-                // Task 2: Superblock Manager
+                // ================================
+                //   TASK 2: Superblock
+                // ================================
                 SuperblockManager superblock = new SuperblockManager(disk);
-                Console.WriteLine("\nSuperblock initialized with zeros.");
 
-                byte[] sbMessage = Encoding.ASCII.GetBytes("MiniFAT Superblock");
+                Console.WriteLine("\n--- Writing Superblock ---");
+                byte[] sbMessage = Encoding.ASCII.GetBytes("MiniFAT Superblock OK");
                 byte[] sbData = new byte[FSConstants.CLUSTER_SIZE];
                 Array.Copy(sbMessage, sbData, sbMessage.Length);
 
                 superblock.WriteSuperblock(sbData);
-                Console.WriteLine("Superblock updated.");
+                Console.WriteLine("Superblock written.");
+
+                Console.WriteLine("--- Reading Superblock ---");
                 byte[] sbRead = superblock.ReadSuperblock();
                 string sbText = Encoding.ASCII.GetString(sbRead, 0, sbMessage.Length);
                 Console.WriteLine("Superblock content: " + sbText);
+
+                // ================================
+                //   TASK 3: FAT TABLE
+                // ================================
+                FatTableManager fat = new FatTableManager(disk);
+
+                Console.WriteLine("\n--- Loading FAT ---");
+                fat.LoadFatFromDisk();
+                Console.WriteLine("FAT loaded into memory.");
+                int freeBefore = fat.GetFreeClusterCount();
+                Console.WriteLine("Free clusters before allocation: " + freeBefore);
+                Console.WriteLine("\n--- Allocating 3 clusters ---");
+                int startCluster = fat.AllocateChain(3);
+                Console.WriteLine("Allocated chain starting at cluster: " + startCluster);
+                Console.WriteLine("\n--- Following cluster chain ---");
+                var chain = fat.FollowChain(startCluster);
+                Console.WriteLine("Chain: " + string.Join(" -> ", chain));
+                Console.WriteLine("\n--- Freeing chain ---");
+                fat.FreeChain(startCluster);
+                Console.WriteLine("Chain freed.");
+                int freeAfter = fat.GetFreeClusterCount();
+                Console.WriteLine("Free clusters after freeing: " + freeAfter);
+                Console.WriteLine("\n--- Saving FAT to disk ---");
+                fat.FlushFatToDisk();
+                Console.WriteLine("FAT saved successfully.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("\nERROR: " + ex.Message);
             }
             finally
             {
                 disk.CloseDisk();
             }
-
             Console.WriteLine("\nDone. Press any key to exit.");
             Console.ReadKey();
         }
