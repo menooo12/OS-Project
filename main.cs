@@ -60,6 +60,41 @@ namespace OS_project
                 Console.WriteLine("\n--- Saving FAT to disk ---");
                 fat.FlushFatToDisk();
                 Console.WriteLine("FAT saved successfully.");
+                // ================================
+                //   TASK 4: DIRECTORY MANAGEMENT
+                // ================================
+                    int rootCluster = FSConstants.ROOT_DIR_FIRST_CLUSTER;
+                    FatTableManager fatManager = new FatTableManager(disk);
+                    Directory directory = new Directory(disk, fatManager);
+
+                    try { fatManager.AllocateChain(1); } catch { }
+
+                    directory.ListRootDirectory();
+
+                    DirectoryEntry file1 = new DirectoryEntry("TEST.TXT", 0x20, 10, 1024);
+                    directory.AddDirectoryEntry(rootCluster, file1);
+
+                    directory.ListRootDirectory();
+
+                    DirectoryEntry found = directory.FindDirectoryEntry(rootCluster, "TEST.TXT");
+                    if (found != null)
+                        Console.WriteLine($"Found: {found.Name}, Size: {found.FileSize}");
+                    else
+                        Console.WriteLine("File not found!");
+
+                    DirectoryEntry file2 = new DirectoryEntry("README.DOC", 0x20, 15, 2048);
+                    directory.AddDirectoryEntry(rootCluster, file2);
+
+                    DirectoryEntry folder = new DirectoryEntry("MYDIR", 0x10, 20, 0);
+                    directory.AddDirectoryEntry(rootCluster, folder);
+
+                    directory.ListRootDirectory();
+
+                    directory.RemoveDirectoryEntry(rootCluster, "TEST.TXT");
+
+                    directory.ListRootDirectory();
+
+                    fatManager.FlushFatToDisk();
             }
             catch (Exception ex)
             {
